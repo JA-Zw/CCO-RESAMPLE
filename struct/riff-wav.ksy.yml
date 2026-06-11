@@ -1,0 +1,74 @@
+meta:
+  id: riff_wav
+  file-extension: wav
+  endian: le
+  encoding: utf8
+seq:
+  - id: riff
+    contents: "RIFF"
+  - id: grootte_inh
+    type: u4
+  - id: wave
+    contents: "WAVE"
+  - id: inhoud
+    size: grootte_inh - 4
+    type: inhoud
+types:
+  inhoud:
+    seq:
+      - id: blokken
+        type: blok
+        repeat: eos
+  blok:
+    seq:
+      - id: id
+        size: 4
+        type: str
+      - id: grootte
+        type: u4
+      - id: inhoud
+        size: grootte
+        type: 
+          switch-on: id
+          cases:
+            '"fmt "': format(grootte)
+            '"data"': bytes
+            '"fact"': fact
+            _: bytes
+  bytes:
+    seq:
+      - id: inhoud
+        size-eos: true
+  format:
+    params:
+      - id: grootte
+        type: u4
+    seq:
+      - id: format
+        type: u2
+      - id: kanalen
+        type: u2
+      - id: sample_rate
+        type: u4
+      - id: byte_rate
+        type: u4
+      - id: blok_grootte
+        type: u2
+      - id: bits_per_sample
+        type: u2
+      - id: bonus_data_grootte
+        type: u2
+        if: grootte > 16
+      - id: nuttige_bits
+        type: u2
+        if: grootte > 16 and bonus_data_grootte >= 2
+      - id: kanaal_luidspreker
+        type: u2
+        if: grootte > 16 and bonus_data_grootte >= 4
+      - id: werkelijk_format
+        type: u2
+        if: grootte > 16 and bonus_data_grootte >= 6
+  fact:
+    seq:
+      - id: totaal_samples
+        type: u4
