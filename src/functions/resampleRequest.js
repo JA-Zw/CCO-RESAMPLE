@@ -5,6 +5,20 @@ const KS = require("kaitai-struct/KaitaiStream");
 
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AzureWebJobsStorage;
 
+class DataView24 extends DataView {
+    getInt24 (offset, endian){
+        //we gaan sws le doen, dus we negeren endian
+        return this.getUint8(offset) | (this.getUint8(offset+1) << 8)  | (this.getInt8(offset+2) << 16);
+    }
+    setInt24 (offset, value, endian){
+        //we gaan sws le doen, dus we negeren endian
+        const bValue = value >>> 0; // hetzelfde getal, maar met de sign op 0;
+        this.setUint8(offset, Math.round(bValue) % 256);
+        this.setUint8(offset+1, (bValue >> 8) % 256);
+        this.setInt8(offset+2, (value >> 16) % 256); // hier is de sign er weer
+    }
+}
+
 app.http('resample', {
     methods: ['POST'],
     authLevel: 'anonymous',
@@ -28,7 +42,7 @@ app.http('resample', {
         const invoerKanalen = [];
         try{
             const sampleData = data.inhoud; //is uint8array 
-            const sampleDataView = new DataView(sampleData.buffer, sampleData.byteOffset, sampleData.byteLength);
+            const sampleDataView = new DataView24(sampleData.buffer, sampleData.byteOffset, sampleData.byteLength);
             let uitleesFunctie;
             const format = fmt.werkelijkFormat ?? fmt.format;
             switch(format){
@@ -41,6 +55,10 @@ app.http('resample', {
                         case 32:
                             uitleesFunctie = sampleDataView.getInt32;
                             schrijfFunctie = "setInt32";
+                            break;
+                        case 24:
+                            uitleesFunctie = sampleDataView.getInt24;
+                            schrijfFunctie = "setInt24";
                             break;
                         case 16:
                             uitleesFunctie = sampleDataView.getInt16;
@@ -112,7 +130,7 @@ app.http('resample', {
                             + 12 // fact blok
             ;
             const nieuwBestand = new ArrayBuffer(uitvoerGrootte);
-            const uitvoerView = new DataView(nieuwBestand);
+            const uitvoerView = new DataView24(nieuwBestand);
 
             //jaja, weer dit
             const schrijf = uitvoerView[schrijfFunctie].bind(uitvoerView);
