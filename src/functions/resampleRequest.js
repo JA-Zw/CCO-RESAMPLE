@@ -22,7 +22,7 @@ app.http('resample', {
             return {body: "je wavbestand is slecht: "+ e.toString(), status: 400};
         }
         const fmt  = wav.inhoud.blokken.find(blok=>{return blok.id == "fmt "}).inhoud;
-        const fact = wav.inhoud.blokken.find(blok=>{return blok.id == "fact"}).inhoud;
+        const fact = wav.inhoud.blokken.find(blok=>{return blok.id == "fact"})?.inhoud;
         const data = wav.inhoud.blokken.find(blok=>{return blok.id == "data"}).inhoud;
         
         const invoerKanalen = [];
@@ -88,7 +88,7 @@ app.http('resample', {
             }
             //console.log(invoerKanalen);
             const origineleSampleRate = fmt.sampleRate;
-            const origineleLengte = fact.totaalSamples ?? sampleData.length / fmt.blokGrootte;
+            const origineleLengte = fact?.totaalSamples ?? sampleData.length / fmt.blokGrootte;
             const uitvoerLengte = Math.round(origineleLengte / origineleSampleRate * uitvoerSampleRate);
             const uitvoerKanalen = invoerKanalen.map(origineleSamples=>{
                 const uitvoerSamples = [];
@@ -105,7 +105,6 @@ app.http('resample', {
                 }
                 return uitvoerSamples;
             });
-            console.log(origineleLengte,uitvoerLengte);
 
             const uitvoerGrootte = 12 // RIFF blok
                             + uitvoerLengte * fmt.blokGrootte + 8 // data blok
@@ -115,7 +114,7 @@ app.http('resample', {
             const nieuwBestand = new ArrayBuffer(uitvoerGrootte);
             const uitvoerView = new DataView(nieuwBestand);
 
-            //jaja, dit kan ook ...blijkbaar, wel handig
+            //jaja, weer dit
             const schrijf = uitvoerView[schrijfFunctie].bind(uitvoerView);
 
             let offset = 0;
